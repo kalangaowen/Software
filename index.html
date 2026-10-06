@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppVault - Modern Software & App Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js for dynamic state -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [x-cloak] { display: none !important; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .dark ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.5); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107,114,128,0.8); }
+    </style>
+</head>
+<body x-data="appPortal()" x-init="initApp()" :class="{ 'dark bg-gray-900 text-gray-100': darkMode, 'bg-gray-50 text-gray-800': !darkMode }" class="min-h-screen transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3 cursor-pointer" @click="activeTab = 'directory'; resetFilters()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                        <i data-lucide="box" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AppVault</span>
+                        <span class="hidden sm:inline-block text-xs text-gray-500 dark:text-gray-400 ml-2 font-medium">v2.4 Hub</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+                    <button 
+                        @click="activeTab = 'directory'" 
+                        :class="activeTab === 'directory' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                        class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-2 transition"
+                    >
+                        <i data-lucide="grid" class="w-4 h-4"></i>
+                        <span>Directory</span>
+                    </button>
+                    <button 
+                        @click="activeTab = 'reviews'" 
+                        :class="activeTab === 'reviews' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                        class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-2 transition relative"
+                    >
+                        <i data-lucide="folder-check" class="w-4 h-4"></i>
+                        <span>Uploaded & Reviews</span>
+                        <span class="bg-blue-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold" x-text="softwareList.length"></span>
+                    </button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xs sm:max-w-md mx-2 hidden md:block" x-show="activeTab === 'directory'">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            x-model="searchQuery"
+                            placeholder="Search software, tools, apps..." 
+                            class="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/60 focus:bg-white dark:focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder-gray-400"
+                        >
+                        <button x-show="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions & Dark Mode Toggle -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button 
+                        @click="toggleDarkMode()" 
+                        class="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                        :title="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    >
+                        <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+                    </button>
+
+                    <button 
+                        @click="triggerFileBrowser()" 
+                        class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm shadow-md shadow-blue-500/20 active:scale-95 transition"
+                    >
+                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Upload Software</span>
+                    </button>
+
+                    <!-- Hidden File Input for Direct Trigger -->
+                    <input type="file" id="directFileInput" class="hidden" accept=".exe,.dmg,.app,.apk,.zip,.deb,.tar.gz" @change="handleFileSelect($event)">
+                </div>
+            </div>
+
+            <!-- Categories Bar -->
+            <div x-show="activeTab === 'directory'" class="flex items-center gap-2 py-2 overflow-x-auto no-scrollbar border-t border-gray-100 dark:border-gray-800/50 text-xs sm:text-sm">
+                <button 
+                    @click="selectedCategory = 'All'" 
+                    :class="selectedCategory === 'All' ? 'bg-blue-600 text-white font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'"
+                    class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition"
+                >
+                    All Categories
+                </button>
+                <template x-for="cat in categories" :key="cat">
+                    <button 
+                        @click="selectedCategory = cat" 
+                        :class="selectedCategory === cat ? 'bg-blue-600 text-white font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'"
+                        class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition"
+                        x-text="cat"
+                    ></button>
+                </template>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <template x-if="activeTab === 'directory'">
+        <div>
+            <!-- Hero / Trending Showcase Section -->
+            <section x-show="!searchQuery && selectedCategory === 'All' && selectedOS === 'All'" class="relative py-8 bg-gradient-to-b from-blue-50/50 to-transparent dark:from-gray-800/30 dark:to-transparent border-b border-gray-200/60 dark:border-gray-800/60">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-3 w-3 relative">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                            </span>
+                            <h2 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                                <i data-lucide="flame" class="w-5 h-5 text-orange-500"></i> Featured & Trending
+                            </h2>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Hand-picked by editors</div>
+                    </div>
+
+                    <!-- Featured Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <template x-for="item in featuredSoftware" :key="item.id">
+                            <div class="group relative bg-white dark:bg-gray-800/80 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-700/80 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-start justify-between gap-3 mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <img :src="item.icon" :alt="item.name" class="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-700 shadow-inner" @error="$event.target.src='https://placehold.co/100x100/3b82f6/fff?text=App'">
+                                            <div>
+                                                <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition cursor-pointer" @click="viewDetails(item)" x-text="item.name"></h3>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                    <span>by</span> <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.developer"></span>
+                                                    <span>•</span>
+                                                    <span x-text="'v' + item.version"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span 
+                                            :class="getLicenseBadgeClass(item.license)"
+                                            class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border"
+                                            x-text="item.license"
+                                        ></span>
+                                    </div>
+
+                                    <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-4" x-text="item.description"></p>
+                                </div>
+
+                                <div>
+                                    <div class="flex items-center justify-between text-xs border-t border-gray-100 dark:border-gray-700/50 pt-3 mb-4">
+                                        <div class="flex items-center gap-1 text-amber-500 font-semibold">
+                                            <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                                            <span x-text="item.rating.toFixed(1)"></span>
+                                            <span class="text-gray-400 font-normal" x-text="'(' + (item.reviews ? item.reviews.length : 0) + ')'"></span>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-2 text-gray-400">
+                                            <template x-for="os in item.os" :key="os">
+                                                <span class="text-xs" :title="os">
+                                                    <i :data-lucide="getOSIcon(os)" class="w-4 h-4 hover:text-gray-600 dark:hover:text-gray-200"></i>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <button 
+                                            @click="viewDetails(item)"
+                                            class="flex-1 py-2 px-3 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700/60 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition text-center"
+                                        >
+                                            Details & Specs
+                                        </button>
+                                        <button 
+                                            @click="triggerDownload(item)"
+                                            class="flex items-center justify-center gap-1.5 py-2 px-4 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-md shadow-blue-500/20 active:scale-95"
+                                        >
+                                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                            <span>Download</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Content Directory Area -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                <!-- Controls & Filters Bar -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0">
+                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-2 hidden sm:inline">Platform:</span>
+                        <template x-for="os in osList" :key="os">
+                            <button 
+                                @click="selectedOS = os" 
+                                :class="selectedOS === os ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-medium' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition whitespace-nowrap"
+                            >
+                                <i :data-lucide="getOSIcon(os)" class="w-3.5 h-3.5"></i>
+                                <span x-text="os"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <select 
+                            x-model="selectedLicense"
+                            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="All">All Licenses</option>
+                            <option value="Free">Free / Open Source</option>
+                            <option value="Freemium">Freemium</option>
+                            <option value="Paid">Commercial / Paid</option>
+                        </select>
+
+                        <select 
+                            x-model="sortBy"
+                            class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="downloads">Most Downloaded</option>
+                            <option value="rating">Highest Rated</option>
+                            <option value="newest">Newest Releases</option>
+                            <option value="name">Name (A-Z)</option>
+                        </select>
+
+                        <div class="flex items-center bg-gray-200 dark:bg-gray-800 p-1 rounded-xl">
+                            <button 
+                                @click="viewMode = 'grid'" 
+                                :class="viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="p-1.5 rounded-lg transition"
+                            >
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                            </button>
+                            <button 
+                                @click="viewMode = 'list'" 
+                                :class="viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="p-1.5 rounded-lg transition"
+                            >
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Directory Status Counter -->
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-4 px-1">
+                    <div>
+                        Showing <span class="font-semibold text-gray-800 dark:text-gray-200" x-text="filteredSoftware.length"></span> software applications
+                        <span x-show="searchQuery" x-text="' matching &quot;' + searchQuery + '&quot;'"></span>
+                    </div>
+                    <button x-show="selectedCategory !== 'All' || selectedOS !== 'All' || selectedLicense !== 'All' || searchQuery" @click="resetFilters()" class="text-blue-600 hover:underline">Reset Filters</button>
+                </div>
+
+                <!-- Software Directory Cards Grid -->
+                <div x-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <template x-for="item in filteredSoftware" :key="item.id">
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200/80 dark:border-gray-700/80 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col justify-between group">
+                            <div>
+                                <div class="flex items-start justify-between gap-3 mb-3">
+                                    <img :src="item.icon" :alt="item.name" class="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-700 shadow-inner group-hover:scale-105 transition-transform" @error="$event.target.src='https://placehold.co/100x100/3b82f6/fff?text=App'">
+                                    <div class="flex flex-col items-end gap-1">
+                                        <span 
+                                            :class="getLicenseBadgeClass(item.license)"
+                                            class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border"
+                                            x-text="item.license"
+                                        ></span>
+                                        <span class="text-[11px] text-gray-400 font-mono" x-text="'v' + item.version"></span>
+                                    </div>
+                                </div>
+
+                                <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition cursor-pointer text-base line-clamp-1" @click="viewDetails(item)" x-text="item.name"></h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium" x-text="item.developer"></p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-4 leading-relaxed" x-text="item.description"></p>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between text-xs py-2 border-t border-gray-100 dark:border-gray-700/60 mb-3">
+                                    <span class="text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-2 py-0.5 rounded-md text-[11px]" x-text="item.category"></span>
+                                    
+                                    <div class="flex items-center gap-1.5 text-gray-400">
+                                        <template x-for="os in item.os" :key="os">
+                                            <i :data-lucide="getOSIcon(os)" class="w-3.5 h-3.5"></i>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-2 pt-1">
+                                    <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-center gap-1 text-amber-500 font-semibold">
+                                            <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                                            <span x-text="item.rating.toFixed(1)"></span>
+                                        </div>
+                                        <div class="flex items-center gap-1" title="Total Downloads">
+                                            <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
+                                            <span x-text="formatNumber(item.downloads)"></span>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        @click="triggerDownload(item)" 
+                                        class="p-2 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition active:scale-95"
+                                        title="Download Now"
+                                    >
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- List View -->
+                <div x-show="viewMode === 'list'" class="space-y-3">
+                    <template x-for="item in filteredSoftware" :key="item.id">
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200/80 dark:border-gray-700/80 hover:border-blue-500 dark:hover:border-blue-500 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
+                            <div class="flex items-center gap-4 flex-1">
+                                <img :src="item.icon" :alt="item.name" class="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-700 shrink-0" @error="$event.target.src='https://placehold.co/100x100/3b82f6/fff?text=App'">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition cursor-pointer text-base" @click="viewDetails(item)" x-text="item.name"></h3>
+                                        <span class="text-xs text-gray-400 font-mono" x-text="'v' + item.version"></span>
+                                        <span :class="getLicenseBadgeClass(item.license)" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border" x-text="item.license"></span>
+                                        <span class="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-md" x-text="item.category"></span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-1" x-text="item.description"></p>
+                                    <div class="text-xs text-gray-400 flex items-center gap-3">
+                                        <span>by <strong class="text-gray-600 dark:text-gray-300" x-text="item.developer"></strong></span>
+                                        <span>•</span>
+                                        <div class="flex items-center gap-1 text-amber-500 font-semibold">
+                                            <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                                            <span x-text="item.rating.toFixed(1)"></span>
+                                        </div>
+                                        <span>•</span>
+                                        <div class="flex items-center gap-1">
+                                            <i data-lucide="download-cloud" class="w-3 h-3"></i>
+                                            <span x-text="formatNumber(item.downloads) + ' downloads'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between w-full md:w-auto gap-4 shrink-0 border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-3 md:pt-0">
+                                <div class="flex items-center gap-2 text-gray-400">
+                                    <template x-for="os in item.os" :key="os">
+                                        <i :data-lucide="getOSIcon(os)" class="w-4 h-4"></i>
+                                    </template>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button 
+                                        @click="viewDetails(item)" 
+                                        class="px-3 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
+                                    >
+                                        Details
+                                    </button>
+                                    <button 
+                                        @click="triggerDownload(item)" 
+                                        class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95"
+                                    >
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                        <span>Download</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Empty Search State -->
+                <div x-show="filteredSoftware.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 my-6">
+                    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="search-x" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">No software found</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">We couldn't find any software matching your filters or search term.</p>
+                    <div class="flex items-center justify-center gap-3">
+                        <button @click="resetFilters()" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">Clear Filters</button>
+                        <button @click="triggerFileBrowser()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition">Upload New App</button>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </template>
+
+    <!-- NEW TAB: Uploaded Software & Reviews Hub -->
+    <template x-if="activeTab === 'reviews'">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="folder-check" class="w-6 h-6 text-blue-600"></i> Software Submissions & Reviews Portal
+                    </h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Review all uploaded software applications, inspect source packages, monitor download statistics, and evaluate user feedback.</p>
+                </div>
+                <button 
+                    @click="triggerFileBrowser()" 
+                    class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center gap-2 self-start md:self-auto"
+                >
+                    <i data-lucide="plus" class="w-4 h-4"></i> Upload New Package
+                </button>
+            </div>
+
+            <!-- Dashboard Analytics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center gap-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-xl">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white" x-text="softwareList.length"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Total Apps Managed</div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center gap-4">
+                    <div class="p-3 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-xl">
+                        <i data-lucide="download" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white" x-text="formatNumber(getTotalDownloads())"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Cumulative Downloads</div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center gap-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-xl">
+                        <i data-lucide="message-square" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white" x-text="getTotalReviewsCount()"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Total User Reviews</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software Submissions Table / Review List -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h2 class="font-bold text-gray-900 dark:text-white text-sm">Uploaded Software List</h2>
+                    <span class="text-xs text-gray-400" x-text="softwareList.length + ' applications listed'"></span>
+                </div>
+
+                <div class="divide-y divide-gray-100 dark:divide-gray-700/80">
+                    <template x-for="item in softwareList" :key="item.id">
+                        <div class="p-6 space-y-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <img :src="item.icon" class="w-12 h-12 rounded-xl object-cover bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 shrink-0" @error="$event.target.src='https://placehold.co/100x100/3b82f6/fff?text=App'">
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h3 class="font-bold text-gray-900 dark:text-white text-base" x-text="item.name"></h3>
+                                            <span class="text-xs text-gray-400 font-mono" x-text="'v' + item.version"></span>
+                                            <span :class="getLicenseBadgeClass(item.license)" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border" x-text="item.license"></span>
+                                            <span x-show="item.uploadedFile" class="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-semibold px-2 py-0.5 rounded-full">Custom Upload</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="'Developer: ' + item.developer + ' • Category: ' + item.category + ' • File Size: ' + (item.size || 'N/A')"></p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 self-end sm:self-auto">
+                                    <button @click="viewDetails(item)" class="px-3 py-1.5 text-xs font-semibold bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-gray-700 dark:text-gray-200 rounded-xl transition flex items-center gap-1">
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> Inspect
+                                    </button>
+                                    <button @click="deleteSoftware(item.id)" class="px-3 py-1.5 text-xs font-semibold bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-xl transition flex items-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- User Reviews Accordion Sub-section -->
+                            <div class="bg-gray-50 dark:bg-gray-900/40 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <i data-lucide="star" class="w-3.5 h-3.5 text-amber-500 fill-amber-500"></i>
+                                        User Reviews (<span x-text="item.reviews ? item.reviews.length : 0"></span>)
+                                    </span>
+                                    <div class="text-xs text-amber-500 font-bold" x-text="item.rating.toFixed(1) + ' / 5.0 Rating'"></div>
+                                </div>
+
+                                <div class="space-y-2" x-show="item.reviews && item.reviews.length > 0">
+                                    <template x-for="(rev, rIdx) in item.reviews" :key="rIdx">
+                                        <div class="text-xs bg-white dark:bg-gray-800 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                                            <div>
+                                                <span class="font-semibold text-gray-800 dark:text-gray-200" x-text="rev.author"></span>
+                                                <p class="text-gray-600 dark:text-gray-400 mt-0.5" x-text="rev.text"></p>
+                                            </div>
+                                            <div class="flex items-center text-amber-500">
+                                                <template x-for="s in rev.stars" :key="s">
+                                                    <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div x-show="!item.reviews || item.reviews.length === 0" class="text-xs text-gray-400 italic">
+                                    No reviews yet for this software release.
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+    </template>
+
+    <!-- Software Upload Modal Form with Live Upload Bar -->
+    <div x-show="openUploadModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+                x-show="openUploadModal" 
+                x-transition:enter="ease-out duration-300" 
+                x-transition:enter-start="opacity-0" 
+                x-transition:enter-end="opacity-100" 
+                x-transition:leave="ease-in duration-200" 
+                x-transition:leave-start="opacity-100" 
+                x-transition:leave-end="opacity-0" 
+                @click="openUploadModal = false" 
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+            ></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div 
+                x-show="openUploadModal" 
+                x-transition:enter="ease-out duration-300" 
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                x-transition:leave="ease-in duration-200" 
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                class="inline-block align-bottom bg-white dark:bg-gray-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-gray-800"
+            >
+                <form @submit.prevent="submitSoftware()">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold">Upload & Submit Software</h3>
+                            <p class="text-xs text-blue-100">Publish software binaries directly to AppVault</p>
+                        </div>
+                        <button type="button" @click="openUploadModal = false" class="text-white/80 hover:text-white">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-xs sm:text-sm">
+
+                        <!-- Interactive Drop Zone File Picker -->
+                        <div class="space-y-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300">Executable / Binary File *</label>
+                            <div 
+                                @click="triggerFileBrowser()" 
+                                class="border-2 border-dashed border-blue-400/60 hover:border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-6 rounded-2xl cursor-pointer text-center transition flex flex-col items-center justify-center gap-2"
+                            >
+                                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-300 flex items-center justify-center">
+                                    <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                                </div>
+                                <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                                    <span x-show="!uploadForm.fileName" class="text-blue-600 dark:text-blue-400 font-bold underline">Click to choose software file</span>
+                                    <span x-show="uploadForm.fileName" class="font-bold text-emerald-600 dark:text-emerald-400" x-text="'Selected File: ' + uploadForm.fileName + ' (' + uploadForm.size + ')'"></span>
+                                </div>
+                                <p class="text-[11px] text-gray-400">Supports .EXE, .DMG, .ZIP, .APK, .DEB formats</p>
+                            </div>
+                        </div>
+
+                        <!-- Simulated File Upload Progress Bar -->
+                        <div x-show="uploading" class="space-y-1.5 bg-gray-50 dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <div class="flex justify-between text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                <span>Uploading Binary Package...</span>
+                                <span x-text="uploadProgress + '%'"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                                <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-200" :style="'width: ' + uploadProgress + '%'"></div>
+                            </div>
+                        </div>
+
+                        <!-- App Name & Version -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="sm:col-span-2 space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">Software Title *</label>
+                                <input type="text" x-model="uploadForm.name" required placeholder="e.g. CodeForge Studio" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">Version *</label>
+                                <input type="text" x-model="uploadForm.version" required placeholder="e.g. 1.0.4" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Developer & Category -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">Developer / Company *</label>
+                                <input type="text" x-model="uploadForm.developer" required placeholder="e.g. Nexus Software" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">Category *</label>
+                                <select x-model="uploadForm.category" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <template x-for="cat in categories" :key="cat">
+                                        <option :value="cat" x-text="cat"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- License & File Size -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">License Model *</label>
+                                <select x-model="uploadForm.license" required class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="Free">Free / Open Source</option>
+                                    <option value="Freemium">Freemium</option>
+                                    <option value="Paid">Paid / Commercial</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block font-semibold text-gray-700 dark:text-gray-300">File Size</label>
+                                <input type="text" x-model="uploadForm.size" placeholder="e.g. 64 MB" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- OS Compatibility Checkboxes -->
+                        <div class="space-y-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300">OS Compatibility *</label>
+                            <div class="flex items-center gap-4 flex-wrap pt-1">
+                                <template x-for="os in ['Windows', 'macOS', 'Linux', 'Mobile', 'Web Apps']" :key="os">
+                                    <label class="flex items-center gap-2 cursor-pointer border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                        <input type="checkbox" :value="os" x-model="uploadForm.os" class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span class="text-xs" x-text="os"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Icon URL -->
+                        <div class="space-y-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300">Logo Icon URL</label>
+                            <input type="url" x-model="uploadForm.icon" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <!-- Description -->
+                        <div class="space-y-1">
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300">Short Description *</label>
+                            <textarea x-model="uploadForm.description" required rows="2" placeholder="Brief summary of what the software does..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-gray-800/80 px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">
+                        <button type="button" @click="openUploadModal = false" class="px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">Cancel</button>
+                        <button type="submit" :disabled="uploading" class="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 transition disabled:opacity-50">Publish Software</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Software Details Modal -->
+    <div x-show="selectedAppModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+                x-show="selectedAppModal" 
+                x-transition:enter="ease-out duration-300" 
+                x-transition:enter-start="opacity-0" 
+                x-transition:enter-end="opacity-100" 
+                x-transition:leave="ease-in duration-200" 
+                x-transition:leave-start="opacity-100" 
+                x-transition:leave-end="opacity-0" 
+                @click="selectedAppModal = null" 
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
+            ></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div 
+                x-show="selectedAppModal" 
+                x-transition:enter="ease-out duration-300" 
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                x-transition:leave="ease-in duration-200" 
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                class="inline-block align-bottom bg-white dark:bg-gray-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-gray-200 dark:border-gray-800"
+            >
+                <template x-if="selectedAppModal">
+                    <div>
+                        <!-- Header Banner -->
+                        <div class="relative bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 p-6 sm:p-8 border-b border-gray-200 dark:border-gray-800">
+                            <button @click="selectedAppModal = null" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                                <div class="flex items-center gap-5">
+                                    <img :src="selectedAppModal.icon" :alt="selectedAppModal.name" class="w-20 h-20 rounded-2xl object-cover bg-white dark:bg-gray-800 shadow-md p-1 border border-gray-200 dark:border-gray-700" @error="$event.target.src='https://placehold.co/100x100/3b82f6/fff?text=App'">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white" x-text="selectedAppModal.name"></h2>
+                                            <span :class="getLicenseBadgeClass(selectedAppModal.license)" class="text-xs uppercase font-bold px-2.5 py-0.5 rounded-full border" x-text="selectedAppModal.license"></span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                                            Developer: <span class="font-semibold text-gray-800 dark:text-gray-100" x-text="selectedAppModal.developer"></span>
+                                        </p>
+                                        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                            <span class="bg-gray-200 dark:bg-gray-800 px-2.5 py-1 rounded-md font-mono" x-text="'Version ' + selectedAppModal.version"></span>
+                                            <span>•</span>
+                                            <span x-text="selectedAppModal.category"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-full sm:w-auto flex flex-col gap-2">
+                                    <button 
+                                        @click="triggerDownload(selectedAppModal)" 
+                                        class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 text-base transition transform active:scale-95"
+                                    >
+                                        <i data-lucide="download" class="w-5 h-5"></i>
+                                        <span>Download Software</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content Body -->
+                        <div class="p-6 sm:p-8 space-y-8 max-h-[60vh] overflow-y-auto">
+                            
+                            <!-- Key Metrics Highlights -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <span class="text-xs text-gray-400 block">Rating</span>
+                                    <div class="flex items-center gap-1 text-amber-500 font-bold text-lg">
+                                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                                        <span x-text="selectedAppModal.rating.toFixed(1)"></span>
+                                        <span class="text-xs text-gray-400 font-normal" x-text="'(' + (selectedAppModal.reviews ? selectedAppModal.reviews.length : 0) + ')'"></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-400 block">Total Downloads</span>
+                                    <span class="text-lg font-bold text-gray-800 dark:text-gray-200" x-text="formatNumber(selectedAppModal.downloads)"></span>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-400 block">File Size</span>
+                                    <span class="text-lg font-bold text-gray-800 dark:text-gray-200" x-text="selectedAppModal.size || '45 MB'"></span>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-400 block">OS Support</span>
+                                    <div class="flex items-center gap-2 mt-1 text-gray-700 dark:text-gray-300">
+                                        <template x-for="os in selectedAppModal.os" :key="os">
+                                            <i :data-lucide="getOSIcon(os)" class="w-4 h-4" :title="os"></i>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Description -->
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">About Software</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line" x-text="selectedAppModal.fullDescription || selectedAppModal.description"></p>
+                            </div>
+
+                            <!-- Reviews & Community Section -->
+                            <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">User Reviews</h3>
+                                
+                                <!-- Submit Review Box -->
+                                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl mb-6 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Rate this app:</span>
+                                        <div class="flex items-center gap-1 cursor-pointer">
+                                            <template x-for="star in [1,2,3,4,5]" :key="star">
+                                                <i 
+                                                    data-lucide="star" 
+                                                    @click="userRatingInput = star" 
+                                                    :class="star <= userRatingInput ? 'text-amber-500 fill-amber-500' : 'text-gray-300 dark:text-gray-600'" 
+                                                    class="w-5 h-5 transition transform hover:scale-110"
+                                                ></i>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <textarea 
+                                        x-model="userReviewText"
+                                        placeholder="Write your review or feedback regarding performance, features, bugs..." 
+                                        class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        rows="2"
+                                    ></textarea>
+                                    <div class="flex justify-end">
+                                        <button 
+                                            @click="addReview(selectedAppModal)" 
+                                            class="px-4 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+                                        >
+                                            Submit Review
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Review List -->
+                                <div class="space-y-3">
+                                    <template x-for="(rev, rIdx) in selectedAppModal.reviews || []" :key="rIdx">
+                                        <div class="p-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800/80 text-xs">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <span class="font-bold text-gray-800 dark:text-gray-200" x-text="rev.author"></span>
+                                                <div class="flex items-center text-amber-500">
+                                                    <template x-for="s in rev.stars" :key="s">
+                                                        <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            <p class="text-gray-600 dark:text-gray-400" x-text="rev.text"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div 
+        x-show="toast.visible" 
+        x-cloak 
+        x-transition:enter="transition ease-out duration-300 transform"
+        x-transition:enter-start="opacity-0 translate-y-8"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200 transform"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-8"
+        class="fixed bottom-5 right-5 z-50 flex items-center gap-3 bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-5 py-3.5 rounded-2xl shadow-2xl border border-gray-700 dark:border-gray-200 max-w-md"
+    >
+        <div class="p-2 rounded-xl bg-blue-500 text-white shrink-0">
+            <i data-lucide="info" class="w-5 h-5"></i>
+        </div>
+        <div>
+            <h4 class="font-bold text-xs uppercase tracking-wide" x-text="toast.title">Notification</h4>
+            <p class="text-xs opacity-90" x-text="toast.message"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 mt-16 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+                        <i data-lucide="box" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-gray-900 dark:text-white">AppVault</span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Open Software & Application Portal Hub</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6 text-xs text-gray-500 dark:text-gray-400">
+                    <a href="#" class="hover:text-blue-600 transition">Terms of Service</a>
+                    <a href="#" class="hover:text-blue-600 transition">Developer API</a>
+                    <a href="#" class="hover:text-blue-600 transition">DMCA Policy</a>
+                    <a href="#" class="hover:text-blue-600 transition">Virus Total Scanner</a>
+                </div>
+
+                <div class="text-xs text-gray-400">
+                    &copy; 2026 AppVault Inc. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function appPortal() {
+            return {
+                darkMode: false,
+                activeTab: 'directory', // 'directory' or 'reviews'
+                searchQuery: '',
+                selectedCategory: 'All',
+                selectedOS: 'All',
+                selectedLicense: 'All',
+                sortBy: 'downloads',
+                viewMode: 'grid',
+                openUploadModal: false,
+                uploading: false,
+                uploadProgress: 0,
+                selectedAppModal: null,
+                userRatingInput: 5,
+                userReviewText: '',
+                
+                toast: {
+                    visible: false,
+                    title: '',
+                    message: ''
+                },
+
+                categories: [
+                    'Developer Tools',
+                    'Graphics & Design',
+                    'Productivity',
+                    'Security & Privacy',
+                    'Media & Video',
+                    'Utilities'
+                ],
+
+                osList: ['All', 'Windows', 'macOS', 'Linux', 'Mobile', 'Web Apps'],
+
+                uploadForm: {
+                    fileName: '',
+                    name: '',
+                    version: '1.0.0',
+                    developer: 'Community Developer',
+                    category: 'Developer Tools',
+                    license: 'Free',
+                    size: '',
+                    os: ['Windows', 'macOS'],
+                    icon: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
+                    downloadUrl: '#',
+                    description: '',
+                    uploadedFile: null
+                },
+
+                softwareList: [],
+
+                initApp() {
+                    const savedTheme = localStorage.getItem('app_theme');
+                    this.darkMode = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    this.updateThemeClass();
+
+                    const stored = localStorage.getItem('app_vault_software');
+                    if (stored) {
+                        try {
+                            this.softwareList = JSON.parse(stored);
+                        } catch (e) {
+                            this.loadMockData();
+                        }
+                    } else {
+                        this.loadMockData();
+                    }
+
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+
+                    this.$watch('darkMode', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('viewMode', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('activeTab', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('selectedAppModal', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('searchQuery', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('selectedCategory', () => this.$nextTick(() => lucide.createIcons()));
+                    this.$watch('selectedOS', () => this.$nextTick(() => lucide.createIcons()));
+                },
+
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    localStorage.setItem('app_theme', this.darkMode ? 'dark' : 'light');
+                    this.updateThemeClass();
+                },
+
+                updateThemeClass() {
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                },
+
+                triggerFileBrowser() {
+                    document.getElementById('directFileInput').click();
+                },
+
+                handleFileSelect(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    // Open Upload Modal automatically
+                    this.openUploadModal = true;
+                    this.uploading = true;
+                    this.uploadProgress = 0;
+
+                    // Extract Metadata
+                    const formattedSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+                    const cleanedName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+                    
+                    this.uploadForm.fileName = file.name;
+                    this.uploadForm.name = cleanedName.charAt(0).toUpperCase() + cleanedName.slice(1);
+                    this.uploadForm.size = formattedSize;
+                    this.uploadForm.description = 'Uploaded package ' + file.name + ' ready for installation.';
+                    
+                    // Create local object URL for instant download link
+                    this.uploadForm.downloadUrl = URL.createObjectURL(file);
+                    this.uploadForm.uploadedFile = file.name;
+
+                    // Simulate Live Upload Progress
+                    let interval = setInterval(() => {
+                        this.uploadProgress += 20;
+                        if (this.uploadProgress >= 100) {
+                            clearInterval(interval);
+                            this.uploading = false;
+                            this.showToast('File Processed', 'Ready to finalize software details.');
+                        }
+                    }, 150);
+                },
+
+                deleteSoftware(id) {
+                    if(confirm('Are you sure you want to delete this software submission?')) {
+                        this.softwareList = this.softwareList.filter(item => item.id !== id);
+                        this.saveToStorage();
+                        this.showToast('Deleted', 'Software removed successfully.');
+                    }
+                },
+
+                getTotalDownloads() {
+                    return this.softwareList.reduce((acc, item) => acc + (item.downloads || 0), 0);
+                },
+
+                getTotalReviewsCount() {
+                    return this.softwareList.reduce((acc, item) => acc + (item.reviews ? item.reviews.length : 0), 0);
+                },
+
+                loadMockData() {
+                    this.softwareList = [
+                        {
+                            id: 1,
+                            name: 'PulseEdit Studio',
+                            developer: 'Pulse Systems',
+                            version: '3.8.2',
+                            category: 'Developer Tools',
+                            license: 'Free',
+                            featured: true,
+                            downloads: 142000,
+                            rating: 4.8,
+                            size: '88 MB',
+                            os: ['Windows', 'macOS', 'Linux'],
+                            icon: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=150&auto=format&fit=crop&q=80',
+                            downloadUrl: 'https://github.com',
+                            description: 'Ultra-fast, lightweight code editor with built-in AI completion, multi-cursor editing, and live extension studio.',
+                            fullDescription: 'PulseEdit Studio provides seamless development workflows across high-scale applications.',
+                            reviews: [
+                                { author: 'Alex Rivera', stars: 5, text: 'Replaced my daily driver. Modern UI and super fast!' },
+                                { author: 'DevGuy99', stars: 4, text: 'Great extension ecosystem.' }
+                            ]
+                        },
+                        {
+                            id: 2,
+                            name: 'CyberShield VPN & Firewall',
+                            developer: 'Aegis Security Tech',
+                            version: '2.1.0',
+                            category: 'Security & Privacy',
+                            license: 'Freemium',
+                            featured: true,
+                            downloads: 98000,
+                            rating: 4.7,
+                            size: '42 MB',
+                            os: ['Windows', 'macOS', 'Mobile'],
+                            icon: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=150&auto=format&fit=crop&q=80',
+                            downloadUrl: 'https://github.com',
+                            description: 'Zero-log encrypted VPN network agent with automated app firewall.',
+                            fullDescription: 'Protect your desktop and mobile traffic with CyberShield. Powered by WireGuard protocol.',
+                            reviews: [
+                                { author: 'Samantha K.', stars: 5, text: 'Solid performance on public Wi-Fi.' }
+                            ]
+                        }
+                    ];
+                    this.saveToStorage();
+                },
+
+                saveToStorage() {
+                    localStorage.setItem('app_vault_software', JSON.stringify(this.softwareList));
+                },
+
+                get featuredSoftware() {
+                    return this.softwareList.filter(item => item.featured).slice(0, 3);
+                },
+
+                get filteredSoftware() {
+                    return this.softwareList.filter(item => {
+                        const q = this.searchQuery.toLowerCase().trim();
+                        const matchesSearch = !q || 
+                            item.name.toLowerCase().includes(q) || 
+                            item.developer.toLowerCase().includes(q) || 
+                            item.description.toLowerCase().includes(q) ||
+                            item.category.toLowerCase().includes(q);
+
+                        const matchesCat = this.selectedCategory === 'All' || item.category === this.selectedCategory;
+                        const matchesOS = this.selectedOS === 'All' || (item.os && item.os.includes(this.selectedOS));
+                        const matchesLicense = this.selectedLicense === 'All' || item.license === this.selectedLicense;
+
+                        return matchesSearch && matchesCat && matchesOS && matchesLicense;
+                    }).sort((a, b) => {
+                        if (this.sortBy === 'downloads') return b.downloads - a.downloads;
+                        if (this.sortBy === 'rating') return b.rating - a.rating;
+                        if (this.sortBy === 'newest') return b.id - a.id;
+                        if (this.sortBy === 'name') return a.name.localeCompare(b.name);
+                        return 0;
+                    });
+                },
+
+                resetFilters() {
+                    this.searchQuery = '';
+                    this.selectedCategory = 'All';
+                    this.selectedOS = 'All';
+                    this.selectedLicense = 'All';
+                    this.sortBy = 'downloads';
+                },
+
+                viewDetails(item) {
+                    this.selectedAppModal = item;
+                    this.userRatingInput = 5;
+                    this.userReviewText = '';
+                },
+
+                triggerDownload(item) {
+                    item.downloads += 1;
+                    this.saveToStorage();
+
+                    this.showToast('Download Started!', 'Downloading ' + item.name + ' v' + item.version + '...');
+
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = item.downloadUrl || '#';
+                        link.download = item.uploadedFile || item.name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }, 500);
+                },
+
+                submitSoftware() {
+                    const newApp = {
+                        id: Date.now(),
+                        name: this.uploadForm.name,
+                        version: this.uploadForm.version,
+                        developer: this.uploadForm.developer,
+                        category: this.uploadForm.category,
+                        license: this.uploadForm.license,
+                        size: this.uploadForm.size || '25 MB',
+                        os: this.uploadForm.os.length > 0 ? [...this.uploadForm.os] : ['Windows'],
+                        icon: this.uploadForm.icon || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
+                        downloadUrl: this.uploadForm.downloadUrl,
+                        uploadedFile: this.uploadForm.uploadedFile,
+                        description: this.uploadForm.description,
+                        featured: false,
+                        downloads: 1,
+                        rating: 5.0,
+                        reviews: [
+                            { author: 'Administrator', stars: 5, text: 'Verified package submission.' }
+                        ]
+                    };
+
+                    this.softwareList.unshift(newApp);
+                    this.saveToStorage();
+
+                    this.openUploadModal = false;
+                    this.uploadForm = {
+                        fileName: '',
+                        name: '',
+                        version: '1.0.0',
+                        developer: 'Community Developer',
+                        category: 'Developer Tools',
+                        license: 'Free',
+                        size: '',
+                        os: ['Windows', 'macOS'],
+                        icon: '',
+                        downloadUrl: '#',
+                        description: '',
+                        uploadedFile: null
+                    };
+
+                    this.showToast('Success!', newApp.name + ' uploaded and added to review dashboard.');
+                },
+
+                addReview(app) {
+                    if (!this.userReviewText.trim()) return;
+
+                    if (!app.reviews) app.reviews = [];
+                    app.reviews.unshift({
+                        author: 'User' + Math.floor(1000 + Math.random() * 9000),
+                        stars: this.userRatingInput,
+                        text: this.userReviewText
+                    });
+
+                    const totalStars = app.reviews.reduce((acc, r) => acc + r.stars, 0);
+                    app.rating = totalStars / app.reviews.length;
+
+                    this.saveToStorage();
+                    this.userReviewText = '';
+                    this.showToast('Review Added', 'Thank you for rating ' + app.name + '!');
+                },
+
+                showToast(title, message) {
+                    this.toast.title = title;
+                    this.toast.message = message;
+                    this.toast.visible = true;
+                    setTimeout(() => {
+                        this.toast.visible = false;
+                    }, 4000);
+                },
+
+                getOSIcon(osName) {
+                    switch (osName) {
+                        case 'Windows': return 'monitor';
+                        case 'macOS': return 'apple';
+                        case 'Linux': return 'terminal';
+                        case 'Mobile': return 'smartphone';
+                        case 'Web Apps': return 'globe';
+                        default: return 'laptop';
+                    }
+                },
+
+                getLicenseBadgeClass(license) {
+                    switch (license) {
+                        case 'Free': return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
+                        case 'Freemium': return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+                        case 'Paid': return 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+                        default: return 'bg-gray-100 text-gray-600 border-gray-200';
+                    }
+                },
+
+                formatNumber(num) {
+                    if (!num) return '0';
+                    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+                    return num.toString();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
